@@ -268,7 +268,7 @@ except ValueError:
 style_dict = {
     'Total_Games_Played': "{:.0f}",
     'Avg_PTS': "{:.1f}", 'Avg_FGM': "{:.1f}", 'Avg_FGA': "{:.1f}",
-    'Avg_3PM': "{:.1f}", 'Avg_3PA': "{:.1f}",
+    'Avg_3PTM': "{:.1f}", 'Avg_3PA': "{:.1f}",
     'Avg_FTM': "{:.1f}", 'Avg_FTA': "{:.1f}",
     'Avg_OREB': "{:.1f}", 'Avg_DREB': "{:.1f}", 'Avg_REB': "{:.1f}",
     'Avg_AST': "{:.1f}", 'Avg_STL': "{:.1f}", 'Avg_BLK': "{:.1f}",
@@ -289,7 +289,7 @@ player_box_avg = (
         Avg_FGM=('FGM', 'mean'),
         Avg_FGA=('FGA', 'mean'),
         Avg_FG_PCT=('FG_PCT', 'mean'),
-        Avg_3PM=('3PTM', 'mean'),
+        Avg_3PTM=('3PTM', 'mean'),
         Avg_3PA=('3PA', 'mean'),
         Avg_3P_PCT=('3P%', 'mean'),
         Avg_FTM=('FTM', 'mean'),
@@ -424,7 +424,7 @@ if selected_team != 'All Teams' and selected_player_no not in ['All Players', No
         display_cols = [
             'Total_Games_Played',
             'Avg_PTS', 'Avg_FGM', 'Avg_FGA', 'Avg_FG_PCT',
-            'Avg_3PM', 'Avg_3PA', 'Avg_3P_PCT',
+            'Avg_3PTM', 'Avg_3PA', 'Avg_3P_PCT',
             'Avg_FTM', 'Avg_FTA', 'Avg_FT_PCT',
             'Avg_OREB', 'Avg_DREB', 'Avg_REB',
             'Avg_AST', 'Avg_STL', 'Avg_BLK', 'Avg_TOV', 'Avg_PF'
@@ -443,7 +443,7 @@ elif selected_team != 'All Teams' and selected_player_no == 'All Players':
         display_cols = [
             'Player No.', 'Total_Games_Played',
             'Avg_PTS', 'Avg_FGM', 'Avg_FGA', 'Avg_FG_PCT',
-            'Avg_3PM', 'Avg_3PA', 'Avg_3P_PCT',
+            'Avg_3PTM', 'Avg_3PA', 'Avg_3P_PCT',
             'Avg_FTM', 'Avg_FTA', 'Avg_FT_PCT',
             'Avg_OREB', 'Avg_DREB', 'Avg_REB',
             'Avg_AST', 'Avg_STL', 'Avg_BLK', 'Avg_TOV', 'Avg_PF'
@@ -459,7 +459,7 @@ elif selected_team == 'All Teams' and selected_player_no == 'All Players':
     display_cols = [
         'Player No.', 'Team', 'Total_Games_Played',
         'Avg_PTS', 'Avg_FGM', 'Avg_FGA', 'Avg_FG_PCT',
-        'Avg_3PM', 'Avg_3PA', 'Avg_3P_PCT',
+        'Avg_3PTM', 'Avg_3PA', 'Avg_3P_PCT',
         'Avg_FTM', 'Avg_FTA', 'Avg_FT_PCT',
         'Avg_OREB', 'Avg_DREB', 'Avg_REB',
         'Avg_AST', 'Avg_STL', 'Avg_BLK', 'Avg_TOV', 'Avg_PF'
@@ -474,9 +474,10 @@ elif selected_team == 'All Teams' and selected_player_no == 'All Players':
 st.header("Box Score Totals")
 
 # Add weighted shooting % for each player
-df_cleaned['FG_PCT_TOTAL'] = df_cleaned['FGM'] / df_cleaned['FGA'].replace(0, np.nan)
-df_cleaned['FT_PCT_TOTAL'] = df_cleaned['FTM'] / df_cleaned['FTA'].replace(0, np.nan)
-df_cleaned['3P_PCT_TOTAL'] = df_cleaned['3PTM'] / df_cleaned['3PA'].replace(0, np.nan)
+# Note: Using existing percentage columns since individual makes/attempts not available
+df_cleaned['FG_PCT_TOTAL'] = df_cleaned['FG_PCT']
+df_cleaned['FT_PCT_TOTAL'] = df_cleaned['FT%']
+df_cleaned['3P_PCT_TOTAL'] = df_cleaned['3P%']
 
 # Create the label column FIRST from df_cleaned
 df_cleaned['Player_Team_Label'] = df_cleaned.apply(
@@ -487,7 +488,7 @@ df_cleaned['Player_Team_Label'] = df_cleaned.apply(
 totals_style_dict = {
     'Total_Games_Played': "{:.0f}",
     'Total_PTS': "{:.0f}", 'Total_FGM': "{:.0f}", 'Total_FGA': "{:.0f}",
-    'Total_3PM': "{:.0f}", 'Total_3PA': "{:.0f}",
+    'Total_3PTM': "{:.0f}", 'Total_3PA': "{:.0f}",
     'Total_FTM': "{:.0f}", 'Total_FTA': "{:.0f}",
     'Total_OREB': "{:.0f}", 'Total_DREB': "{:.0f}", 'Total_REB': "{:.0f}",
     'Total_AST': "{:.0f}", 'Total_STL': "{:.0f}", 'Total_BLK': "{:.0f}",
@@ -497,15 +498,67 @@ totals_style_dict = {
     'P3_PCT': lambda x: f"{x * 100:.1f}%"
 }
 
-# Display
+# Define display columns for totals
 display_total_cols = [
     'Player No.', 'Team', 'Total_Games_Played',
     'Total_PTS', 'Total_FGM', 'Total_FGA', 'FG_PCT',
-    'Total_3PM', 'Total_3PA', 'P3_PCT',
+    'Total_3PTM', 'Total_3PA', 'P3_PCT',
     'Total_FTM', 'Total_FTA', 'FT_PCT',
     'Total_OREB', 'Total_DREB', 'Total_REB',
     'Total_AST', 'Total_STL', 'Total_BLK', 'Total_TOV', 'Total_PF'
 ]
+
+# Calculate player totals
+player_totals = (
+    df_cleaned.groupby(['Player No.', 'Team'])
+    .agg(
+        Total_Games_Played=('Game', 'nunique'),
+        Total_PTS=('PTS', 'sum'),
+        Total_FGM=('FGM', 'sum'),
+        Total_FGA=('FGA', 'sum'),
+        Total_3PTM=('3PTM', 'sum'),
+        Total_3PA=('3PA', 'sum'),
+        Total_FTM=('FTM', 'sum'),
+        Total_FTA=('FTA', 'sum'),
+        Total_OREB=('OREB', 'sum'),
+        Total_DREB=('DREB', 'sum'),
+        Total_REB=('REB', 'sum'),
+        Total_AST=('AST', 'sum'),
+        Total_STL=('STL', 'sum'),
+        Total_BLK=('BLK', 'sum'),
+        Total_TOV=('TOV', 'sum'),
+        Total_PF=('PF', 'sum'),
+        FG_PCT=('FG_PCT', 'mean'),
+        FT_PCT=('FT%', 'mean'),
+        P3_PCT=('3P%', 'mean')
+    )
+    .reset_index()
+)
+
+# Display totals based on selection
+if selected_team != 'All Teams' and selected_player_no not in ['All Players', 'No Opponent']:
+    # Single player totals
+    player_total_data = player_totals[
+        (player_totals['Player No.'] == selected_player_no_float) &
+        (player_totals['Team'] == selected_team)
+    ]
+    if not player_total_data.empty:
+        available_cols = [col for col in display_total_cols if col in player_total_data.columns]
+        st.dataframe(player_total_data[available_cols].style.format(totals_style_dict))
+    else:
+        st.info("No totals data found for the selected player.")
+elif selected_team != 'All Teams' and selected_player_no == 'All Players':
+    # Team totals
+    team_total_data = player_totals[player_totals['Team'] == selected_team]
+    if not team_total_data.empty:
+        available_cols = [col for col in display_total_cols if col in team_total_data.columns]
+        st.dataframe(team_total_data[available_cols].set_index('Player No.').style.format(totals_style_dict))
+    else:
+        st.info("No totals data found for this team.")
+else:
+    # All players totals
+    available_cols = [col for col in display_total_cols if col in player_totals.columns]
+    st.dataframe(player_totals[available_cols].style.format(totals_style_dict))
 
 
 # --- Player Advanced Statistics Table ---
